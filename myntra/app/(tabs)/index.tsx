@@ -1,195 +1,114 @@
 import {
-  ScrollView,
-  View,
-  Text,
-  Image,
-  TouchableOpacity,
-  StyleSheet,
-  ActivityIndicator,
-} from "react-native";
+  COLLECTIONS,
+  Gender,
+  GENDERS,
+  getProductsByCollection,
+  getProductsByGender,
+  PRODUCTS,
+} from "@/constants/catalog";
+import { useShop } from "@/context/ShopContext";
 import { useRouter } from "expo-router";
-import { Search, ChevronRight } from "lucide-react-native";
-import React, { useEffect, useState } from "react";
-import { useAuth } from "@/context/AuthContext";
-import axios from "axios";
-
-// const categories = [
-//   {
-//     id: 1,
-//     name: "Men",
-//     image:
-//       "https://images.unsplash.com/photo-1617137968427-85924c800a22?w=500&auto=format&fit=crop",
-//   },
-//   {
-//     id: 2,
-//     name: "Women",
-//     image:
-//       "https://images.unsplash.com/photo-1618244972963-dbad0c4abf18?w=500&auto=format&fit=crop",
-//   },
-//   {
-//     id: 3,
-//     name: "Kids",
-//     image:
-//       "https://images.unsplash.com/photo-1622290291468-a28f7a7dc6a8?w=500&auto=format&fit=crop",
-//   },
-//   {
-//     id: 4,
-//     name: "Beauty",
-//     image:
-//       "https://images.unsplash.com/photo-1596462502278-27bfdc403348?w=500&auto=format&fit=crop",
-//   },
-// ];
-
-// const products = [
-//   {
-//     id: 1,
-//     name: "Casual White T-Shirt",
-//     brand: "Roadster",
-//     price: "₹499",
-//     discount: "60% OFF",
-//     image:
-//       "https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?w=500&auto=format&fit=crop",
-//   },
-//   {
-//     id: 2,
-//     name: "Denim Jacket",
-//     brand: "Levis",
-//     price: "₹2499",
-//     discount: "40% OFF",
-//     image:
-//       "https://images.unsplash.com/photo-1523205771623-e0faa4d2813d?w=500&auto=format&fit=crop",
-//   },
-//   {
-//     id: 3,
-//     name: "Summer Dress",
-//     brand: "ONLY",
-//     price: "₹1299",
-//     discount: "50% OFF",
-//     image:
-//       "https://images.unsplash.com/photo-1515372039744-b8f02a3ae446?w=500&auto=format&fit=crop",
-//   },
-//   {
-//     id: 4,
-//     name: "Classic Sneakers",
-//     brand: "Nike",
-//     price: "₹3499",
-//     discount: "30% OFF",
-//     image:
-//       "https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=500&auto=format&fit=crop",
-//   },
-// ];
-
-const deals = [
-  {
-    id: 1,
-    title: "Under ₹599",
-    image:
-      "https://images.unsplash.com/photo-1434389677669-e08b4cac3105?w=500&auto=format&fit=crop",
-  },
-  {
-    id: 2,
-    title: "40-70% Off",
-    image:
-      "https://images.unsplash.com/photo-1483985988355-763728e1935b?w=500&auto=format&fit=crop",
-  },
-];
+import { Heart, Search } from "lucide-react-native";
+import React, { useMemo, useState } from "react";
+import {
+  Image,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+} from "react-native";
 
 export default function Home() {
   const router = useRouter();
-  const [isLoading, setIsLoading] = useState(false);
-  const [product, setproduct] = useState<any>(null);
-  const [categories, setcategories] = useState<any>(null);
-  const { user } = useAuth();
-  const handleProductPress = (productId: number) => {
-    if (!user) {
-      router.push("/login");
-    } else {
-      router.push(`/product/${productId}`);
-    }
-  };
-  useEffect(() => {
-    const fetchproduct = async () => {
-      try {
-        setIsLoading(true);
-        const cat = await axios.get("https://myntra-clone-xj36.onrender.com/category");
-        const product = await axios.get("https://myntra-clone-xj36.onrender.com/product");
-        setcategories(cat.data);
-        setproduct(product.data);
-      } catch (error) {
-        console.log(error);
-        setIsLoading(false);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-    fetchproduct();
-  }, []);
+  const { isLiked, toggleLike } = useShop();
+  const [gender, setGender] = useState<Gender>("Women");
+  const [collection, setCollection] = useState<string | null>(null);
+
+  const products = useMemo(() => {
+    if (collection) return getProductsByCollection(gender, collection);
+    return getProductsByGender(gender);
+  }, [gender, collection]);
+
   return (
     <ScrollView style={styles.container}>
       <View style={styles.header}>
-        <Text style={styles.logo}>MYNTRA</Text>
-        <TouchableOpacity style={styles.searchButton}>
-          <Search size={24} color="#3e3e3e" />
+        <View>
+          <Text style={styles.logo}>MYNTRA</Text>
+          <Text style={styles.tagline}>Fashion like Meesho</Text>
+        </View>
+        <TouchableOpacity
+          style={styles.searchButton}
+          onPress={() => router.push("/categories")}
+        >
+          <Search size={22} color="#3e3e3e" />
         </TouchableOpacity>
       </View>
 
-      <Image
-        source={{
-          uri: "https://images.unsplash.com/photo-1445205170230-053b83016050?w=800&auto=format&fit=crop",
-        }}
-        style={styles.banner}
-      />
-
-      <View style={styles.section}>
-        <View style={styles.sectionHeader}>
-          <Text style={styles.sectionTitle}>SHOP BY CATEGORY</Text>
-          <TouchableOpacity style={styles.viewAll}>
-            <Text style={styles.viewAllText}>View All</Text>
-            <ChevronRight size={20} color="#ff3f6c" />
+      <ScrollView
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        contentContainerStyle={styles.genderRow}
+      >
+        {GENDERS.map((item) => (
+          <TouchableOpacity
+            key={item.key}
+            style={[
+              styles.genderChip,
+              gender === item.key && styles.genderChipActive,
+            ]}
+            onPress={() => {
+              setGender(item.key);
+              setCollection(null);
+            }}
+          >
+            <Text
+              style={[
+                styles.genderText,
+                gender === item.key && styles.genderTextActive,
+              ]}
+            >
+              {item.key}
+            </Text>
           </TouchableOpacity>
+        ))}
+      </ScrollView>
+
+      <View style={styles.heroWrap}>
+        {GENDERS.filter((item) => item.key === gender).map((item) => (
+          <Image
+            key={item.key}
+            source={{ uri: item.image }}
+            style={styles.banner}
+          />
+        ))}
+        <View style={styles.heroOverlay}>
+          <Text style={styles.heroTitle}>{gender} Fashion</Text>
+          <Text style={styles.heroSub}>
+            {GENDERS.find((item) => item.key === gender)?.subtitle}
+          </Text>
         </View>
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          style={styles.categoriesScroll}
-        >
-          {isLoading ? (
-            <ActivityIndicator
-              size="large"
-              color="#ff3f6c"
-              style={styles.loader}
-            />
-          ) : !categories || categories.length === 0 ? (
-            <Text style={styles.emptyText}>No categories available</Text>
-          ) : (
-            categories.map((category: any) => (
-              <TouchableOpacity key={category._id} style={styles.categoryCard}>
-                <Image
-                  source={{ uri: category.image }}
-                  style={styles.categoryImage}
-                />
-                <Text style={styles.categoryName}>{category.name}</Text>
-              </TouchableOpacity>
-            ))
-          )}
-        </ScrollView>
       </View>
 
       <View style={styles.section}>
-        <View style={styles.sectionHeader}>
-          <Text style={styles.sectionTitle}>DEALS OF THE DAY</Text>
-        </View>
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          style={styles.dealsScroll}
-        >
-          {deals.map((deal) => (
-            <TouchableOpacity key={deal.id} style={styles.dealCard}>
-              <Image source={{ uri: deal.image }} style={styles.dealImage} />
-              <View style={styles.dealOverlay}>
-                <Text style={styles.dealTitle}>{deal.title}</Text>
-              </View>
+        <Text style={styles.sectionTitle}>COLLECTIONS</Text>
+        <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+          {COLLECTIONS[gender].map((item) => (
+            <TouchableOpacity
+              key={item.name}
+              style={[
+                styles.collectionCard,
+                collection === item.name && styles.collectionActive,
+              ]}
+              onPress={() =>
+                setCollection(collection === item.name ? null : item.name)
+              }
+            >
+              <Image
+                source={{ uri: item.image }}
+                style={styles.collectionImage}
+              />
+              <Text style={styles.collectionName}>{item.name}</Text>
             </TouchableOpacity>
           ))}
         </ScrollView>
@@ -197,44 +116,52 @@ export default function Home() {
 
       <View style={styles.section}>
         <View style={styles.sectionHeader}>
-          <Text style={styles.sectionTitle}>TRENDING NOW</Text>
+          <Text style={styles.sectionTitle}>
+            {collection ? collection.toUpperCase() : "TRENDING NOW"}
+          </Text>
+          <Text style={styles.count}>{products.length} items</Text>
         </View>
         <View style={styles.productsGrid}>
-          {isLoading ? (
-            <ActivityIndicator
-              size="large"
-              color="#ff3f6c"
-              style={styles.loader}
-            />
-          ) : !product || product.length === 0 ? (
-            <Text style={styles.emptyText}>No Product available</Text>
-          ) : ( 
-            <View style={styles.productsGrid}>
-              {product.map((product: any) => (
+          {products.map((product) => (
+            <TouchableOpacity
+              key={product.id}
+              style={styles.productCard}
+              onPress={() => router.push(`/product/${product.id}`)}
+            >
+              <View>
+                <Image
+                  source={{ uri: product.images[0] }}
+                  style={styles.productImage}
+                />
                 <TouchableOpacity
-                  key={product._id}
-                  style={styles.productCard}
-                  onPress={() => handleProductPress(product._id)}
+                  style={styles.likeFab}
+                  onPress={() => toggleLike(product.id)}
                 >
-                  <Image
-                    source={{ uri: product.images[0
-                      
-                    ] }}
-                    style={styles.productImage}
+                  <Heart
+                    size={16}
+                    color={isLiked(product.id) ? "#ff3f6c" : "#666"}
+                    fill={isLiked(product.id) ? "#ff3f6c" : "none"}
                   />
-                  <View style={styles.productInfo}>
-                    <Text style={styles.brandName}>{product.brand}</Text>
-                    <Text style={styles.productName}>{product.name}</Text>
-                    <View style={styles.priceRow}>
-                      <Text style={styles.productPrice}>{product.price}</Text>
-                      <Text style={styles.discount}>{product.discount}</Text>
-                    </View>
-                  </View>
                 </TouchableOpacity>
-              ))}
-            </View>
-          )}
+              </View>
+              <View style={styles.productInfo}>
+                <Text style={styles.brandName}>{product.brand}</Text>
+                <Text numberOfLines={1} style={styles.productName}>
+                  {product.name}
+                </Text>
+                <View style={styles.priceRow}>
+                  <Text style={styles.productPrice}>₹{product.price}</Text>
+                  <Text style={styles.discount}>{product.discount}</Text>
+                </View>
+              </View>
+            </TouchableOpacity>
+          ))}
         </View>
+        {!collection ? (
+          <Text style={styles.hint}>
+            Showing {gender} fashion · {PRODUCTS.length} styles in store
+          </Text>
+        ) : null}
       </View>
     </ScrollView>
   );
@@ -243,7 +170,7 @@ export default function Home() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#fff",
+    backgroundColor: "#fff7f9",
   },
   header: {
     flexDirection: "row",
@@ -252,27 +179,68 @@ const styles = StyleSheet.create({
     padding: 15,
     paddingTop: 50,
     backgroundColor: "#fff",
-    borderBottomWidth: 1,
-    borderBottomColor: "#f0f0f0",
-  },
-  emptyText: {
-    textAlign: "center",
-    marginTop: 20,
-    fontSize: 16,
-    color: "#666",
   },
   logo: {
     fontSize: 24,
     fontWeight: "bold",
-    color: "#3e3e3e",
+    color: "#ff3f6c",
+  },
+  tagline: {
+    fontSize: 12,
+    color: "#888",
+    marginTop: 2,
   },
   searchButton: {
     padding: 8,
+    backgroundColor: "#f5f5f5",
+    borderRadius: 20,
+  },
+  genderRow: {
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    gap: 8,
+    backgroundColor: "#fff",
+  },
+  genderChip: {
+    paddingHorizontal: 18,
+    paddingVertical: 8,
+    borderRadius: 20,
+    backgroundColor: "#f5f5f5",
+    marginRight: 8,
+  },
+  genderChipActive: {
+    backgroundColor: "#ff3f6c",
+  },
+  genderText: {
+    fontWeight: "700",
+    color: "#3e3e3e",
+  },
+  genderTextActive: {
+    color: "#fff",
+  },
+  heroWrap: {
+    position: "relative",
   },
   banner: {
     width: "100%",
-    height: 200,
-    resizeMode: "cover",
+    height: 180,
+  },
+  heroOverlay: {
+    position: "absolute",
+    left: 0,
+    right: 0,
+    bottom: 0,
+    padding: 16,
+    backgroundColor: "rgba(0,0,0,0.35)",
+  },
+  heroTitle: {
+    color: "#fff",
+    fontSize: 22,
+    fontWeight: "800",
+  },
+  heroSub: {
+    color: "#fff",
+    marginTop: 4,
   },
   section: {
     padding: 15,
@@ -281,120 +249,100 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    marginBottom: 15,
+    marginBottom: 12,
   },
   sectionTitle: {
-    fontSize: 18,
-    fontWeight: "bold",
+    fontSize: 16,
+    fontWeight: "800",
     color: "#3e3e3e",
+    marginBottom: 12,
   },
-  viewAll: {
-    flexDirection: "row",
-    alignItems: "center",
+  count: {
+    color: "#888",
+    marginBottom: 12,
   },
-  viewAllText: {
-    color: "#ff3f6c",
-    marginRight: 5,
-  },
-  categoriesScroll: {
-    marginHorizontal: -15,
-  },
-  categoryCard: {
-    width: 100,
-    marginHorizontal: 8,
-  },
-  categoryImage: {
-    width: 100,
-    height: 100,
-    borderRadius: 50,
-  },
-  categoryName: {
-    textAlign: "center",
-    marginTop: 8,
-    fontSize: 14,
-    color: "#3e3e3e",
-  },
-  dealsScroll: {
-    marginHorizontal: -15,
-  },
-  dealCard: {
-    width: 280,
-    height: 150,
-    marginHorizontal: 8,
-    borderRadius: 10,
+  collectionCard: {
+    width: 110,
+    marginRight: 12,
+    borderRadius: 12,
     overflow: "hidden",
+    backgroundColor: "#fff",
+    borderWidth: 2,
+    borderColor: "transparent",
   },
-  dealImage: {
-    width: "100%",
-    height: "100%",
+  collectionActive: {
+    borderColor: "#ff3f6c",
   },
-  dealOverlay: {
-    position: "absolute",
-    bottom: 0,
-    left: 0,
-    right: 0,
-    backgroundColor: "rgba(0,0,0,0.4)",
-    padding: 15,
+  collectionImage: {
+    width: 110,
+    height: 90,
   },
-  dealTitle: {
-    color: "#fff",
-    fontSize: 18,
-    fontWeight: "bold",
+  collectionName: {
+    textAlign: "center",
+    paddingVertical: 8,
+    fontSize: 12,
+    fontWeight: "600",
   },
   productsGrid: {
     flexDirection: "row",
     flexWrap: "wrap",
-    marginHorizontal: -8,
+    marginHorizontal: -6,
   },
   productCard: {
     width: "48%",
     marginHorizontal: "1%",
-    marginBottom: 15,
+    marginBottom: 12,
     backgroundColor: "#fff",
     borderRadius: 10,
+    overflow: "hidden",
+    elevation: 3,
     shadowColor: "#000",
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.1,
-    shadowRadius: 3.84,
-    elevation: 5,
+    shadowOpacity: 0.08,
+    shadowRadius: 4,
+    shadowOffset: { width: 0, height: 2 },
   },
   productImage: {
     width: "100%",
-    height: 200,
-    borderTopLeftRadius: 10,
-    borderTopRightRadius: 10,
+    height: 190,
+  },
+  likeFab: {
+    position: "absolute",
+    top: 8,
+    right: 8,
+    backgroundColor: "#fff",
+    borderRadius: 14,
+    padding: 6,
   },
   productInfo: {
     padding: 10,
   },
   brandName: {
-    fontSize: 14,
+    fontSize: 12,
     color: "#666",
-    marginBottom: 2,
   },
   productName: {
-    fontSize: 16,
-    marginBottom: 5,
+    fontSize: 14,
+    marginTop: 2,
+    color: "#3e3e3e",
   },
   priceRow: {
     flexDirection: "row",
     alignItems: "center",
+    marginTop: 6,
   },
   productPrice: {
-    fontSize: 16,
+    fontSize: 15,
     fontWeight: "bold",
-    color: "#3e3e3e",
     marginRight: 8,
   },
   discount: {
-    fontSize: 14,
+    fontSize: 12,
     color: "#ff3f6c",
-    fontWeight: "500",
+    fontWeight: "600",
   },
-  loader: {
-    marginTop: 50,
+  hint: {
+    textAlign: "center",
+    color: "#999",
+    marginTop: 8,
   },
 });

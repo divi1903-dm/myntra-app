@@ -1,50 +1,53 @@
-import { Tabs } from 'expo-router';
-import React from 'react';
-import { Chrome, Heart, Search, ShoppingBag, User } from 'lucide-react-native';
+import { Tabs } from "expo-router";
+import { Heart, Home, Search, ShoppingBag, User } from "lucide-react-native";
+import React from "react";
+
 export default function TabLayout() {
   return (
     <Tabs
       screenOptions={{
-        tabBarActiveTintColor: '#ff3f6c',
-        tabBarInactiveTintColor: '#3e3e3e',
+        tabBarActiveTintColor: "#ff3f6c",
+        tabBarInactiveTintColor: "#3e3e3e",
         headerShown: false,
-      }}>
+      }}
+    >
       <Tabs.Screen
         name="index"
         options={{
-          title: 'Home',
-          tabBarIcon: ({ color ,size}) => <Chrome size={size} color={color}/>,
+          title: "Home",
+          tabBarIcon: ({ color, size }) => <Home size={size} color={color} />,
         }}
       />
       <Tabs.Screen
         name="categories"
         options={{
-          title: 'Categories',
-          tabBarIcon: ({ color ,size}) => <Search size={size} color={color}/>,
+          title: "Fashion",
+          tabBarIcon: ({ color, size }) => <Search size={size} color={color} />,
         }}
       />
-        <Tabs.Screen
+      <Tabs.Screen
         name="wishlist"
         options={{
-          title: 'Wishlist',
-          tabBarIcon: ({ color ,size}) => <Heart size={size} color={color}/>,
+          title: "Liked",
+          tabBarIcon: ({ color, size }) => <Heart size={size} color={color} />,
         }}
       />
-        <Tabs.Screen
+      <Tabs.Screen
         name="bag"
         options={{
-          title: 'Bag',
-          tabBarIcon: ({ color ,size}) => <ShoppingBag size={size} color={color}/>,
+          title: "Cart",
+          tabBarIcon: ({ color, size }) => (
+            <ShoppingBag size={size} color={color} />
+          ),
         }}
       />
-        <Tabs.Screen
+      <Tabs.Screen
         name="profile"
         options={{
-          title: 'Profile',
-          tabBarIcon: ({ color ,size}) => <User size={size} color={color}/>,
+          title: "Profile",
+          tabBarIcon: ({ color, size }) => <User size={size} color={color} />,
         }}
       />
-     
     </Tabs>
   );
 }

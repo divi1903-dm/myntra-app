@@ -1,39 +1,46 @@
 import { useAuth } from "@/context/AuthContext";
-import axios from "axios";
+import { useShop } from "@/context/ShopContext";
 import { useRouter } from "expo-router";
-import { CreditCard, MapPin, Truck } from "lucide-react-native";
-import React from "react";
-import { useState } from "react";
+import { Banknote, MapPin, Truck } from "lucide-react-native";
+import React, { useState } from "react";
 import {
-  View,
-  Text,
-  StyleSheet,
+  Alert,
   ScrollView,
+  StyleSheet,
+  Text,
   TextInput,
   TouchableOpacity,
+  View,
 } from "react-native";
 
 export default function Checkout() {
-  const [loading, setLoading] = useState(false);
   const router = useRouter();
   const { user } = useAuth();
-  const handleplaceorder = async() => {
-    if (!user) {
-      router.push("/login");
+  const { bagProducts, bagTotal, placeOrder } = useShop();
+  const [fullName, setFullName] = useState(user?.name || "");
+  const [line1, setLine1] = useState("");
+  const [city, setCity] = useState("");
+  const [state, setState] = useState("");
+  const [pincode, setPincode] = useState("");
+
+  const handleplaceorder = () => {
+    if (!bagProducts.length) {
+      Alert.alert("Bag is empty", "Add products before placing an order");
       return;
     }
-    try {
-      await axios.post(`https://myntra-clone-xj36.onrender.com/order/create/${user._id}`, {
-        shippingAddress: "123 Main Street, Apt 4B, New York, NY, 10001",
-        paymentMethod: "Card",
-      });
-      router.push("/orders");
-    } catch (error) {
-      console.log(error);
+    if (!fullName.trim() || !line1.trim() || !city.trim() || !pincode.trim()) {
+      Alert.alert("Address needed", "Fill in your delivery address");
+      return;
     }
-
-    
+    const shippingAddress = `${fullName}, ${line1}, ${city}, ${state} - ${pincode}`;
+    placeOrder(shippingAddress);
+    Alert.alert(
+      "Order placed",
+      "Your order is confirmed with Cash on Delivery.",
+      [{ text: "View orders", onPress: () => router.replace("/orders") }]
+    );
   };
+
   return (
     <View style={styles.container}>
       <View style={styles.header}>
@@ -45,97 +52,78 @@ export default function Checkout() {
             <MapPin size={24} color="#ff3f6c" />
             <Text style={styles.sectionTitle}>Shipping Address</Text>
           </View>
-          <View style={styles.form}>
+          <TextInput
+            style={styles.input}
+            placeholder="Full Name"
+            value={fullName}
+            onChangeText={setFullName}
+          />
+          <TextInput
+            style={styles.input}
+            placeholder="Address Line"
+            value={line1}
+            onChangeText={setLine1}
+          />
+          <View style={styles.row}>
             <TextInput
-              style={styles.input}
-              placeholder="Full Name"
-              defaultValue="John Doe"
+              style={[styles.input, styles.halfInput]}
+              placeholder="City"
+              value={city}
+              onChangeText={setCity}
             />
             <TextInput
-              style={styles.input}
-              placeholder="Address Line 1"
-              defaultValue="123 Main Street"
+              style={[styles.input, styles.halfInput]}
+              placeholder="State"
+              value={state}
+              onChangeText={setState}
             />
-            <TextInput
-              style={styles.input}
-              placeholder="Address Line 2"
-              defaultValue="Apt 4B"
-            />
-            <View style={styles.row}>
-              <TextInput
-                style={[styles.input, styles.halfInput]}
-                placeholder="City"
-                defaultValue="New York"
-              />
-              <TextInput
-                style={[styles.input, styles.halfInput]}
-                placeholder="State"
-                defaultValue="NY"
-              />
-            </View>
-            <View style={styles.row}>
-              <TextInput
-                style={[styles.input, styles.halfInput]}
-                placeholder="Postal Code"
-                defaultValue="10001"
-              />
-              <TextInput
-                style={[styles.input, styles.halfInput]}
-                placeholder="Country"
-                defaultValue="United States"
-              />
-            </View>
           </View>
+          <TextInput
+            style={styles.input}
+            placeholder="Pincode"
+            value={pincode}
+            onChangeText={setPincode}
+            keyboardType="number-pad"
+          />
         </View>
-        {/* Payment Section */}
+
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
-            <CreditCard size={24} color="#ff3f6c" />
+            <Banknote size={24} color="#ff3f6c" />
             <Text style={styles.sectionTitle}>Payment Method</Text>
           </View>
-          <View style={styles.form}>
-            <TextInput
-              style={styles.input}
-              placeholder="Card Number"
-              defaultValue="**** **** **** 4242"
-            />
-            <View style={styles.row}>
-              <TextInput
-                style={[styles.input, styles.halfInput]}
-                placeholder="Expiry Date"
-                defaultValue="12/25"
-              />
-              <TextInput
-                style={[styles.input, styles.halfInput]}
-                placeholder="CVV"
-                defaultValue="***"
-              />
+          <View style={styles.codCard}>
+            <View style={styles.radioOuter}>
+              <View style={styles.radioInner} />
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text style={styles.codTitle}>Cash on Delivery</Text>
+              <Text style={styles.codText}>
+                Pay in cash when the order is delivered. Card and UPI are not
+                available right now.
+              </Text>
             </View>
           </View>
         </View>
-        {/* Order Summary */}
+
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
             <Truck size={24} color="#ff3f6c" />
             <Text style={styles.sectionTitle}>Order Summary</Text>
           </View>
-          <View style={styles.summary}>
-            <View style={styles.summaryRow}>
-              <Text style={styles.summaryLabel}>Subtotal</Text>
-              <Text style={styles.summaryValue}>₹3,798</Text>
+          {bagProducts.map((item) => (
+            <View key={item.id} style={styles.summaryRow}>
+              <Text style={styles.summaryLabel}>
+                {item.product.name} x {item.quantity}
+              </Text>
+              <Text style={styles.summaryValue}>
+                ₹{item.product.price * item.quantity}
+              </Text>
             </View>
-            <View style={styles.summaryRow}>
-              <Text style={styles.summaryLabel}>Shipping</Text>
-              <Text style={styles.summaryValue}>₹99</Text>
-            </View>
-            <View style={styles.summaryRow}>
-              <Text style={styles.summaryLabel}>Tax</Text>
-              <Text style={styles.summaryValue}>₹190</Text>
-            </View>
-            <View style={[styles.summaryRow, styles.total]}>
-              <Text style={styles.totalLabel}>Total</Text>
-              <Text style={styles.totalValue}>₹4,087</Text>
-            </View>
+          ))}
+          <View style={[styles.summaryRow, styles.total]}>
+            <Text style={styles.totalLabel}>Total (COD)</Text>
+            <Text style={styles.totalValue}>₹{bagTotal}</Text>
           </View>
         </View>
       </ScrollView>
@@ -144,46 +132,33 @@ export default function Checkout() {
           style={styles.placeOrderButton}
           onPress={handleplaceorder}
         >
-          <Text style={styles.placeOrderButtonText}>PLACE ORDER</Text>
+          <Text style={styles.placeOrderButtonText}>PLACE ORDER (COD)</Text>
         </TouchableOpacity>
       </View>
     </View>
   );
 }
+
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: "#fff",
-  },
+  container: { flex: 1, backgroundColor: "#fff" },
   header: {
     padding: 15,
     paddingTop: 50,
-    backgroundColor: "#fff",
     borderBottomWidth: 1,
     borderBottomColor: "#f0f0f0",
   },
-  headerTitle: {
-    fontSize: 24,
-    fontWeight: "bold",
-    color: "#3e3e3e",
-  },
-  content: {
-    flex: 1,
-    padding: 15,
-  },
+  headerTitle: { fontSize: 24, fontWeight: "bold", color: "#3e3e3e" },
+  content: { flex: 1, padding: 15 },
   section: {
     marginBottom: 20,
     backgroundColor: "#fff",
     borderRadius: 10,
     padding: 15,
+    elevation: 4,
     shadowColor: "#000",
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.1,
-    shadowRadius: 3.84,
-    elevation: 5,
+    shadowOpacity: 0.08,
+    shadowRadius: 4,
+    shadowOffset: { width: 0, height: 2 },
   },
   sectionHeader: {
     flexDirection: "row",
@@ -193,11 +168,7 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 18,
     fontWeight: "bold",
-    color: "#3e3e3e",
     marginLeft: 10,
-  },
-  form: {
-    gap: 10,
   },
   input: {
     backgroundColor: "#f5f5f5",
@@ -206,48 +177,52 @@ const styles = StyleSheet.create({
     fontSize: 16,
     marginBottom: 10,
   },
-  row: {
+  row: { flexDirection: "row", justifyContent: "space-between" },
+  halfInput: { width: "48%" },
+  codCard: {
     flexDirection: "row",
-    justifyContent: "space-between",
+    gap: 12,
+    backgroundColor: "#fff4f6",
+    borderRadius: 10,
+    padding: 12,
+    borderWidth: 1,
+    borderColor: "#ff3f6c",
   },
-  halfInput: {
-    width: "48%",
+  radioOuter: {
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+    borderWidth: 2,
+    borderColor: "#ff3f6c",
+    alignItems: "center",
+    justifyContent: "center",
+    marginTop: 2,
   },
-  summary: {
-    gap: 10,
+  radioInner: {
+    width: 10,
+    height: 10,
+    borderRadius: 5,
+    backgroundColor: "#ff3f6c",
   },
+  codTitle: { fontWeight: "800", fontSize: 16, color: "#3e3e3e" },
+  codText: { color: "#666", marginTop: 4, lineHeight: 20 },
   summaryRow: {
     flexDirection: "row",
     justifyContent: "space-between",
     paddingVertical: 5,
   },
-  summaryLabel: {
-    fontSize: 16,
-    color: "#666",
-  },
-  summaryValue: {
-    fontSize: 16,
-    color: "#3e3e3e",
-  },
+  summaryLabel: { fontSize: 15, color: "#666", flex: 1, paddingRight: 8 },
+  summaryValue: { fontSize: 15, color: "#3e3e3e" },
   total: {
     borderTopWidth: 1,
     borderTopColor: "#f0f0f0",
     marginTop: 10,
     paddingTop: 10,
   },
-  totalLabel: {
-    fontSize: 18,
-    fontWeight: "bold",
-    color: "#3e3e3e",
-  },
-  totalValue: {
-    fontSize: 18,
-    fontWeight: "bold",
-    color: "#ff3f6c",
-  },
+  totalLabel: { fontSize: 18, fontWeight: "bold" },
+  totalValue: { fontSize: 18, fontWeight: "bold", color: "#ff3f6c" },
   footer: {
     padding: 15,
-    backgroundColor: "#fff",
     borderTopWidth: 1,
     borderTopColor: "#f0f0f0",
   },
@@ -257,9 +232,5 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     alignItems: "center",
   },
-  placeOrderButtonText: {
-    color: "#fff",
-    fontSize: 16,
-    fontWeight: "bold",
-  },
+  placeOrderButtonText: { color: "#fff", fontSize: 16, fontWeight: "bold" },
 });

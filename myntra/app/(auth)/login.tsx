@@ -1,34 +1,52 @@
-import { useState } from "react";
+import { useAuth } from "@/context/AuthContext";
+import { useRouter } from "expo-router";
+import { Eye, EyeOff } from "lucide-react-native";
+import React, { useState } from "react";
 import {
-  View,
+  ActivityIndicator,
+  Alert,
+  Image,
+  StyleSheet,
   Text,
   TextInput,
   TouchableOpacity,
-  StyleSheet,
-  Image,
-  ActivityIndicator,
+  View,
 } from "react-native";
-import { useRouter } from "expo-router";
-import React from "react";
-import { Eye, EyeOff } from "lucide-react-native";
-import { useAuth } from "@/context/AuthContext";
 
 export default function Login() {
-  const { login } = useAuth();
+  const { login, loginWithGoogle } = useAuth();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const router = useRouter();
   const [showPassword, setShowPassword] = useState(false);
   const [isloading, setisloading] = useState(false);
+  const [googleLoading, setGoogleLoading] = useState(false);
+
   const handleLogin = async () => {
+    if (!email.trim() || !password) {
+      Alert.alert("Login", "Enter email and password");
+      return;
+    }
     try {
       setisloading(true);
       await login(email, password);
       router.replace("/(tabs)");
-    } catch (error) {
-      console.error(error);
+    } catch (error: any) {
+      Alert.alert("Login failed", error.message || "Please try again");
     } finally {
       setisloading(false);
+    }
+  };
+
+  const handleGoogle = async () => {
+    try {
+      setGoogleLoading(true);
+      await loginWithGoogle();
+      router.replace("/(tabs)");
+    } catch {
+      Alert.alert("Google sign-in failed", "Please try again");
+    } finally {
+      setGoogleLoading(false);
     }
   };
 
@@ -42,7 +60,7 @@ export default function Login() {
       />
       <View style={styles.formContainer}>
         <Text style={styles.title}>Welcome to Myntra</Text>
-        <Text style={styles.subtitle}>Login to continue shopping</Text>
+        <Text style={styles.subtitle}>Login or sign in to continue shopping</Text>
         <TextInput
           style={styles.input}
           placeholder="Email"
@@ -82,11 +100,34 @@ export default function Login() {
           )}
         </TouchableOpacity>
 
+        <View style={styles.dividerRow}>
+          <View style={styles.divider} />
+          <Text style={styles.orText}>OR</Text>
+          <View style={styles.divider} />
+        </View>
+
+        <TouchableOpacity
+          style={styles.googleButton}
+          onPress={handleGoogle}
+          disabled={googleLoading}
+        >
+          {googleLoading ? (
+            <ActivityIndicator color="#3e3e3e" />
+          ) : (
+            <>
+              <View style={styles.googleG}>
+                <Text style={styles.googleGText}>G</Text>
+              </View>
+              <Text style={styles.googleText}>Continue with Google</Text>
+            </>
+          )}
+        </TouchableOpacity>
+
         <TouchableOpacity
           style={styles.signupLink}
           onPress={() => router.push("/signup")}
         >
-          <Text style={styles.signupText}>Don't have an account? Sign Up</Text>
+          <Text style={styles.signupText}>Don't have an account? Sign in</Text>
         </TouchableOpacity>
       </View>
     </View>
@@ -108,8 +149,8 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: "center",
     padding: 20,
-    backgroundColor: "rgba(255, 255, 255, 0.9)",
-    marginTop: "60%",
+    backgroundColor: "rgba(255, 255, 255, 0.95)",
+    marginTop: "50%",
     borderTopLeftRadius: 30,
     borderTopRightRadius: 30,
   },
@@ -122,7 +163,7 @@ const styles = StyleSheet.create({
   subtitle: {
     fontSize: 16,
     color: "#666",
-    marginBottom: 30,
+    marginBottom: 24,
   },
   input: {
     backgroundColor: "#f5f5f5",
@@ -157,6 +198,50 @@ const styles = StyleSheet.create({
     color: "#fff",
     fontSize: 16,
     fontWeight: "bold",
+  },
+  dividerRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginVertical: 18,
+  },
+  divider: {
+    flex: 1,
+    height: 1,
+    backgroundColor: "#e5e5e5",
+  },
+  orText: {
+    marginHorizontal: 10,
+    color: "#999",
+  },
+  googleButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    borderWidth: 1,
+    borderColor: "#ddd",
+    borderRadius: 10,
+    padding: 14,
+    backgroundColor: "#fff",
+    gap: 10,
+  },
+  googleG: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    backgroundColor: "#fff",
+    borderWidth: 1,
+    borderColor: "#4285F4",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  googleGText: {
+    color: "#4285F4",
+    fontWeight: "800",
+  },
+  googleText: {
+    fontSize: 16,
+    fontWeight: "600",
+    color: "#3e3e3e",
   },
   signupLink: {
     marginTop: 20,

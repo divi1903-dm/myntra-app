@@ -1,23 +1,24 @@
-import { useState } from "react";
+import { useAuth } from "@/context/AuthContext";
+import { useRouter } from "expo-router";
+import { Eye, EyeOff } from "lucide-react-native";
+import React, { useState } from "react";
 import {
-  View,
+  ActivityIndicator,
+  Alert,
+  Image,
+  ScrollView,
+  StyleSheet,
   Text,
   TextInput,
   TouchableOpacity,
-  StyleSheet,
-  Image,
-  ScrollView,
-  ActivityIndicator,
+  View,
 } from "react-native";
-import { useRouter } from "expo-router";
-import { Eye, EyeOff } from "lucide-react-native";
-import React from "react";
-import { useAuth } from "@/context/AuthContext";
 
 export default function Signup() {
-  const { Signup } = useAuth();
+  const { Signup, loginWithGoogle } = useAuth();
   const router = useRouter();
   const [isloading, setisloading] = useState(false);
+  const [googleLoading, setGoogleLoading] = useState(false);
   const [formData, setFormData] = useState({
     fullName: "",
     email: "",
@@ -32,17 +33,12 @@ export default function Signup() {
 
   const validateForm = () => {
     let isValid = true;
-    const newErrors = {
-      fullName: "",
-      email: "",
-      password: "",
-    };
+    const newErrors = { fullName: "", email: "", password: "" };
 
     if (!formData.fullName.trim()) {
       newErrors.fullName = "Full name is required";
       isValid = false;
     }
-
     if (!formData.email.trim()) {
       newErrors.email = "Email is required";
       isValid = false;
@@ -50,7 +46,6 @@ export default function Signup() {
       newErrors.email = "Please enter a valid email";
       isValid = false;
     }
-
     if (!formData.password) {
       newErrors.password = "Password is required";
       isValid = false;
@@ -58,24 +53,32 @@ export default function Signup() {
       newErrors.password = "Password must be at least 8 characters";
       isValid = false;
     }
-
     setErrors(newErrors);
     return isValid;
   };
 
   const handleSignup = async () => {
-    if (validateForm()) {
-      // Here you would typically make an API call to register the user
-      try {
-        setisloading(true);
-        await Signup(formData.fullName, formData.email, formData.password);
-        router.replace("/(tabs)");
-      } catch (error) {
-        console.error(error);
-      } finally {
-        setisloading(false);
-      }
+    if (!validateForm()) return;
+    try {
+      setisloading(true);
+      await Signup(formData.fullName, formData.email, formData.password);
       router.replace("/(tabs)");
+    } catch (error: any) {
+      Alert.alert("Sign in failed", error.message || "Please try again");
+    } finally {
+      setisloading(false);
+    }
+  };
+
+  const handleGoogle = async () => {
+    try {
+      setGoogleLoading(true);
+      await loginWithGoogle();
+      router.replace("/(tabs)");
+    } catch {
+      Alert.alert("Google sign-in failed", "Please try again");
+    } finally {
+      setGoogleLoading(false);
     }
   };
 
@@ -94,7 +97,7 @@ export default function Signup() {
       <View style={styles.formContainer}>
         <Text style={styles.title}>Create Account</Text>
         <Text style={styles.subtitle}>
-          Join Myntra and discover amazing fashion
+          Sign in to shop Men, Women and Kids fashion
         </Text>
 
         <View style={styles.inputGroup}>
@@ -164,7 +167,25 @@ export default function Signup() {
           {isloading ? (
             <ActivityIndicator color="#fff" />
           ) : (
-            <Text style={styles.buttonText}>SIGN UP</Text>
+            <Text style={styles.buttonText}>SIGN IN</Text>
+          )}
+        </TouchableOpacity>
+
+        <View style={styles.dividerRow}>
+          <View style={styles.divider} />
+          <Text style={styles.orText}>OR</Text>
+          <View style={styles.divider} />
+        </View>
+
+        <TouchableOpacity
+          style={styles.googleButton}
+          onPress={handleGoogle}
+          disabled={googleLoading}
+        >
+          {googleLoading ? (
+            <ActivityIndicator color="#3e3e3e" />
+          ) : (
+            <Text style={styles.googleText}>Continue with Google</Text>
           )}
         </TouchableOpacity>
 
@@ -196,8 +217,8 @@ const styles = StyleSheet.create({
   formContainer: {
     flex: 1,
     padding: 20,
-    backgroundColor: "rgba(255, 255, 255, 0.9)",
-    marginTop: 250,
+    backgroundColor: "rgba(255, 255, 255, 0.95)",
+    marginTop: 220,
     borderTopLeftRadius: 30,
     borderTopRightRadius: 30,
   },
@@ -210,7 +231,7 @@ const styles = StyleSheet.create({
   subtitle: {
     fontSize: 16,
     color: "#666",
-    marginBottom: 30,
+    marginBottom: 24,
   },
   inputGroup: {
     marginBottom: 15,
@@ -250,12 +271,39 @@ const styles = StyleSheet.create({
     padding: 15,
     borderRadius: 10,
     alignItems: "center",
-    marginTop: 20,
+    marginTop: 10,
   },
   buttonText: {
     color: "#fff",
     fontSize: 16,
     fontWeight: "bold",
+  },
+  dividerRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginVertical: 18,
+  },
+  divider: {
+    flex: 1,
+    height: 1,
+    backgroundColor: "#e5e5e5",
+  },
+  orText: {
+    marginHorizontal: 10,
+    color: "#999",
+  },
+  googleButton: {
+    borderWidth: 1,
+    borderColor: "#ddd",
+    borderRadius: 10,
+    padding: 14,
+    alignItems: "center",
+    backgroundColor: "#fff",
+  },
+  googleText: {
+    fontSize: 16,
+    fontWeight: "600",
+    color: "#3e3e3e",
   },
   loginLink: {
     marginTop: 20,

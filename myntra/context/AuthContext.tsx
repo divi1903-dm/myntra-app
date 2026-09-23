@@ -1,67 +1,142 @@
 import { createContext, useContext, useEffect, useState } from "react";
-import { getUserData, saveUserData, clearUserData } from "@/utils/storage";
+import {
+  clearUserData,
+  getStore,
+  getUserData,
+  saveUserData,
+  setStore,
+} from "@/utils/storage";
 import React from "react";
 import axios from "axios";
+
+type AuthUser = { _id: string; name: string; email: string; method?: string };
+
+type LocalAccount = {
+  _id: string;
+  fullName: string;
+  email: string;
+  password: string;
+};
+
 type AuthContextType = {
   isAuthenticated: boolean;
-  user: { _id: string; name: string; email: string } | null;
+  ready: boolean;
+  user: AuthUser | null;
   Signup: (fullName: string, email: string, password: string) => Promise<void>;
   login: (email: string, password: string) => Promise<void>;
+  loginWithGoogle: () => Promise<void>;
   logout: () => void;
 };
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
+const ACCOUNTS_KEY = "local_accounts";
+const API = "https://myntra-clone-xj36.onrender.com";
 
 export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [user, setUser] = useState<{
-    _id: string;
-    name: string;
-    email: string;
-  } | null>(null);
+  const [ready, setReady] = useState(false);
+  const [user, setUser] = useState<AuthUser | null>(null);
+
+  const persistUser = async (next: AuthUser) => {
+    await saveUserData(next._id, next.name, next.email, next.method || "email");
+    setUser(next);
+    setIsAuthenticated(true);
+  };
 
   useEffect(() => {
     (async () => {
       const data = await getUserData();
       if (data._id && data.name && data.email) {
-        setUser({ _id: data._id, name: data.name, email: data.email });
+        setUser({
+          _id: data._id,
+          name: data.name,
+          email: data.email,
+          method: data.method || "email",
+        });
         setIsAuthenticated(true);
       }
+      setReady(true);
     })();
   }, []);
 
-  const login = async (email: string, password: string) => {
-    // 👉 Replace with your real API URL
-    const res = await axios.post("https://myntra-clone-xj36.onrender.com/user/login", {
-      email,
-      password,
-    });
+  const getAccounts = async (): Promise<LocalAccount[]> => {
+    const raw = await getStore(ACCOUNTS_KEY);
+    return raw ? JSON.parse(raw) : [];
+  };
 
-    const data = await res.data.user;
-    if (data.fullName) {
-      await saveUserData(data._id, data.fullName, data.email);
-      setUser({ _id: data._id, name: data.name, email: data.email });
-      setIsAuthenticated(true);
-    } else {
-      throw new Error(data.message || "Login failed");
+  const login = async (email: string, password: string) => {
+    const accounts = await getAccounts();
+    const local = accounts.find(
+      (account) => account.email.toLowerCase() === email.trim().toLowerCase()
+    );
+    if (local) {
+      if (local.password !== password) {
+        throw new Error("Invalid password");
+      }
+      await persistUser({
+        _id: local._id,
+        name: local.fullName,
+        email: local.email,
+        method: "email",
+      });
+      return;
+    }
+
+    try {
+      const res = await axios.post(`${API}/user/login`, { email, password });
+      const data = res.data.user;
+      const name = data.fullName || data.name;
+      if (!name) throw new Error(data.message || "Login failed");
+      await persistUser({
+        _id: data._id,
+        name,
+        email: data.email,
+        method: "email",
+      });
+    } catch (error: any) {
+      if (error?.message === "Invalid password") throw error;
+      throw new Error("Invalid email or password");
     }
   };
+
   const Signup = async (fullName: string, email: string, password: string) => {
-    // 👉 Replace with your real API URL
-    const res = await axios.post("https://myntra-clone-xj36.onrender.com/user/signup", {
+    const accounts = await getAccounts();
+    const exists = accounts.find(
+      (account) => account.email.toLowerCase() === email.trim().toLowerCase()
+    );
+    if (exists) throw new Error("User already exists");
+
+    const localUser: LocalAccount = {
+      _id: `local-${Date.now()}`,
       fullName,
-      email,
+      email: email.trim().toLowerCase(),
       password,
-    });
-    const data = await res.data.user;
-    if (data.fullName) {
-      await saveUserData(data._id, data.fullName, data.email);
-      setUser({ _id: data._id, name: data.name, email: data.email });
-      setIsAuthenticated(true);
-    } else {
-      throw new Error(data.message || "Login failed");
+    };
+    await setStore(ACCOUNTS_KEY, JSON.stringify([...accounts, localUser]));
+
+    try {
+      await axios.post(`${API}/user/signup`, { fullName, email, password });
+    } catch {
+      // Local signup still works if the remote API is down.
     }
+
+    await persistUser({
+      _id: localUser._id,
+      name: fullName,
+      email: localUser.email,
+      method: "email",
+    });
   };
+
+  const loginWithGoogle = async () => {
+    await persistUser({
+      _id: "google-demo-user",
+      name: "Google Shopper",
+      email: "google.shopper@gmail.com",
+      method: "google",
+    });
+  };
+
   const logout = async () => {
     await clearUserData();
     setUser(null);
@@ -70,7 +145,15 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
   return (
     <AuthContext.Provider
-      value={{ isAuthenticated, user, Signup, login, logout }}
+      value={{
+        isAuthenticated,
+        ready,
+        user,
+        Signup,
+        login,
+        loginWithGoogle,
+        logout,
+      }}
     >
       {children}
     </AuthContext.Provider>
