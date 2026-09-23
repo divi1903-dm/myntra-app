@@ -30,7 +30,7 @@ type AuthContextType = {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 const ACCOUNTS_KEY = "local_accounts";
-const API = "https://myntra-clone-xj36.onrender.com";
+const API = process.env.EXPO_PUBLIC_API_URL;
 
 export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);

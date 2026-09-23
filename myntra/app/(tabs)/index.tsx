@@ -17,11 +17,14 @@ import {
   Text,
   TouchableOpacity,
   View,
+  useWindowDimensions,
 } from "react-native";
 
 export default function Home() {
   const router = useRouter();
   const { isLiked, toggleLike } = useShop();
+  const { width } = useWindowDimensions();
+  const isWeb = width >= 768;
   const [gender, setGender] = useState<Gender>("Women");
   const [collection, setCollection] = useState<string | null>(null);
 
@@ -121,7 +124,12 @@ export default function Home() {
           </Text>
           <Text style={styles.count}>{products.length} items</Text>
         </View>
-        <View style={styles.productsGrid}>
+        <View
+          style={[
+           styles.productsGrid,
+            isWeb && styles.productsGridWeb,
+           ]}
+          >
           {products.map((product) => (
             <TouchableOpacity
               key={product.id}
@@ -287,6 +295,11 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     flexWrap: "wrap",
     marginHorizontal: -6,
+  },
+  productsGridWeb: {
+    maxWidth: 1200,
+    width: "100%",
+    alignSelf: "center",
   },
   productCard: {
     width: "48%",

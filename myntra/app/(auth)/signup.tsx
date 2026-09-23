@@ -215,12 +215,12 @@ const styles = StyleSheet.create({
     top: 0,
   },
   formContainer: {
-    flex: 1,
-    padding: 20,
-    backgroundColor: "rgba(255, 255, 255, 0.95)",
-    marginTop: 220,
-    borderTopLeftRadius: 30,
-    borderTopRightRadius: 30,
+  padding: 20,
+  paddingBottom: 40,
+  backgroundColor: "rgba(255, 255, 255, 0.95)",
+  marginTop: 220,
+  borderTopLeftRadius: 30,
+  borderTopRightRadius: 30,
   },
   title: {
     fontSize: 28,
